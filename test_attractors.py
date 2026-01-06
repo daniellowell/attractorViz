@@ -3,7 +3,7 @@
 
 import sys
 import numpy as np
-from attractor_gui import lorenz, rossler, thomas, aizawa, rk4_integrate, ATTRACTORS
+from attractors import lorenz, rossler, thomas, aizawa, rk4_integrate, ATTRACTORS
 
 
 def test_attractor(name, attractor_def):

@@ -1,5 +1,5 @@
-# Attractor Explorer GUI - Python Dependencies
-# Python 3.13+ with Tk 9.0
+# Attractor Explorer - Python Dependencies
+# Python 3.13+
 
 # Core numerical computing
 numpy>=1.24.0
@@ -7,5 +7,8 @@ numpy>=1.24.0
 # Plotting and visualization
 matplotlib>=3.9.0
 
-# Qt backend (alternative to Tkinter)
+# Qt GUI framework
 PyQt6>=6.4.0
+
+# System monitoring
+psutil>=5.9.0
