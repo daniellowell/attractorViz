@@ -161,6 +161,20 @@ class AttractorWindow(QMainWindow):
         self.last_plot_time = 0
         self.stats_text = None
 
+        # Animation state
+        self.animation_mode = False
+        self.animation_running = False
+        self.animation_timer = None
+        self.animation_step = 0
+        self.animation_data = None
+        self.animation_state = None
+        self.animation_scatter = None
+        self.animation_speed = 30  # FPS
+        self.steps_per_frame = 5
+        self.animation_auto_rotate = False
+        self.animation_fade = False
+        self.animation_azim = -60
+
         self._build_ui()
         self._build_menus()
 
@@ -193,7 +207,7 @@ class AttractorWindow(QMainWindow):
         self.equations_layout = QVBoxLayout()
         self.equations_label = QLabel()
         self.equations_label.setWordWrap(True)
-        self.equations_label.setStyleSheet("font-family: monospace; padding: 5px;")
+        self.equations_label.setStyleSheet("font-family: 'Courier New', 'Monaco', monospace; padding: 5px;")
         self.equations_layout.addWidget(self.equations_label)
         self.equations_group.setLayout(self.equations_layout)
         controls_layout.addWidget(self.equations_group)
@@ -220,13 +234,100 @@ class AttractorWindow(QMainWindow):
         init_group.setLayout(init_layout)
         controls_layout.addWidget(init_group)
 
-        # Buttons
-        btn_layout = QHBoxLayout()
+        # Animation toggle
+        self.animation_checkbox = QCheckBox("Series Animation")
+        self.animation_checkbox.setToolTip("Enable real-time step-by-step animation")
+        self.animation_checkbox.stateChanged.connect(self.toggle_animation_mode)
+        controls_layout.addWidget(self.animation_checkbox)
+
+        # Animation controls group (initially hidden)
+        self.animation_group = QGroupBox("Animation Controls")
+        animation_layout = QVBoxLayout()
+
+        # Speed slider
+        speed_layout = QHBoxLayout()
+        speed_layout.addWidget(QLabel("Speed (FPS):"))
+        self.speed_slider = QSlider(Qt.Orientation.Horizontal)
+        self.speed_slider.setMinimum(1)
+        self.speed_slider.setMaximum(60)
+        self.speed_slider.setValue(30)
+        self.speed_slider.setToolTip("Animation speed in frames per second")
+        self.speed_slider.valueChanged.connect(self.update_animation_speed)
+        speed_layout.addWidget(self.speed_slider)
+        self.speed_label = QLabel("30")
+        self.speed_label.setMinimumWidth(30)
+        speed_layout.addWidget(self.speed_label)
+        animation_layout.addLayout(speed_layout)
+
+        # Steps per frame slider
+        steps_layout = QHBoxLayout()
+        steps_layout.addWidget(QLabel("Steps/Frame:"))
+        self.steps_per_frame_slider = QSlider(Qt.Orientation.Horizontal)
+        self.steps_per_frame_slider.setMinimum(1)
+        self.steps_per_frame_slider.setMaximum(20)
+        self.steps_per_frame_slider.setValue(5)
+        self.steps_per_frame_slider.setToolTip("Number of integration steps computed per frame")
+        self.steps_per_frame_slider.valueChanged.connect(self.update_steps_per_frame)
+        steps_layout.addWidget(self.steps_per_frame_slider)
+        self.steps_per_frame_label = QLabel("5")
+        self.steps_per_frame_label.setMinimumWidth(30)
+        steps_layout.addWidget(self.steps_per_frame_label)
+        animation_layout.addLayout(steps_layout)
+
+        # Control buttons
+        anim_btn_layout = QHBoxLayout()
+        self.play_btn = QPushButton("▶ Play")
+        self.play_btn.clicked.connect(self.play_animation)
+        self.play_btn.setToolTip("Start the animation")
+        anim_btn_layout.addWidget(self.play_btn)
+
+        self.pause_btn = QPushButton("⏸ Pause")
+        self.pause_btn.clicked.connect(self.pause_animation)
+        self.pause_btn.setToolTip("Pause the animation")
+        self.pause_btn.setEnabled(False)
+        anim_btn_layout.addWidget(self.pause_btn)
+
+        self.reset_anim_btn = QPushButton("↻ Reset")
+        self.reset_anim_btn.clicked.connect(self.reset_animation)
+        self.reset_anim_btn.setToolTip("Clear and restart animation")
+        anim_btn_layout.addWidget(self.reset_anim_btn)
+        animation_layout.addLayout(anim_btn_layout)
+
+        # Progress label
+        self.progress_label = QLabel("Progress: 0 / 20,000")
+        self.progress_label.setStyleSheet("font-family: 'Courier New', Monaco, monospace;")
+        animation_layout.addWidget(self.progress_label)
+
+        # Animation options
+        self.auto_rotate_checkbox = QCheckBox("Auto-rotate view")
+        self.auto_rotate_checkbox.setToolTip("Slowly rotate the view during animation")
+        self.auto_rotate_checkbox.stateChanged.connect(self.toggle_auto_rotate)
+        animation_layout.addWidget(self.auto_rotate_checkbox)
+
+        self.fade_checkbox = QCheckBox("Fade old points")
+        self.fade_checkbox.setToolTip("Gradually fade older points for comet tail effect")
+        self.fade_checkbox.stateChanged.connect(self.toggle_fade)
+        animation_layout.addWidget(self.fade_checkbox)
+
+        self.animation_group.setLayout(animation_layout)
+        self.animation_group.setVisible(False)
+        controls_layout.addWidget(self.animation_group)
+
+        # Buttons (shown when not in animation mode)
+        self.buttons_widget = QWidget()
+        btn_layout = QHBoxLayout(self.buttons_widget)
+        btn_layout.setContentsMargins(0, 0, 0, 0)
         self.create_btn = QPushButton("Create Plot")
         self.create_btn.clicked.connect(self.create_plot)
         self.create_btn.setToolTip("Generate and display the attractor with current settings")
         btn_layout.addWidget(self.create_btn)
-        controls_layout.addLayout(btn_layout)
+
+        self.reset_btn = QPushButton("Reset to Defaults")
+        self.reset_btn.clicked.connect(self.reset_to_defaults)
+        self.reset_btn.setToolTip("Reset parameters and initial conditions to default values")
+        btn_layout.addWidget(self.reset_btn)
+
+        controls_layout.addWidget(self.buttons_widget)
 
         controls_layout.addStretch()
 
@@ -464,6 +565,11 @@ class AttractorWindow(QMainWindow):
         self.y0_field.setText(str(init[1]))
         self.z0_field.setText(str(init[2]))
 
+    def reset_to_defaults(self):
+        """Reset parameters and initial conditions to default values."""
+        self.rebuild_params()
+        self.statusBar().showMessage("Parameters and initial conditions reset to defaults")
+
     def pick_color(self, color_type):
         initial = QtGui.QColor(self.line_color if color_type == "line" else self.scatter_color)
         color = QColorDialog.getColor(initial, self, f"Choose {color_type} color")
@@ -542,7 +648,7 @@ class AttractorWindow(QMainWindow):
             text_color = 'white' if self.dark_mode else 'black'
             bg_color = 'black' if self.dark_mode else 'white'
             self.stats_text = self.fig.text(0.02, 0.02, stats_str,
-                                           fontsize=9, family='monospace',
+                                           fontsize=9, family='Courier New',
                                            color=text_color,
                                            bbox=dict(boxstyle='round', facecolor=bg_color,
                                                     alpha=0.7, edgecolor=text_color))
@@ -556,7 +662,7 @@ class AttractorWindow(QMainWindow):
         info_text = f"<h2>{attractor_name} Attractor</h2>"
         info_text += f"<p>{description}</p>"
         info_text += "<h3>Equations:</h3>"
-        info_text += "<p style='font-family: monospace;'>"
+        info_text += "<p style='font-family: \"Courier New\", Monaco, monospace;'>"
         info_text += "<br>".join(equations)
         info_text += "</p>"
 
@@ -576,6 +682,209 @@ class AttractorWindow(QMainWindow):
         visible = self.toggle_panel_action.isChecked()
         self.left_panel.setVisible(visible)
         self.statusBar().showMessage(f"Control panel: {'visible' if visible else 'hidden'}")
+
+    def toggle_animation_mode(self):
+        """Toggle between animation mode and regular plotting mode."""
+        self.animation_mode = self.animation_checkbox.isChecked()
+
+        # Show/hide appropriate UI elements
+        self.animation_group.setVisible(self.animation_mode)
+        self.buttons_widget.setVisible(not self.animation_mode)
+
+        # Stop animation if switching away from animation mode
+        if not self.animation_mode and self.animation_running:
+            self.pause_animation()
+
+        self.statusBar().showMessage(f"Animation mode: {'ON' if self.animation_mode else 'OFF'}")
+
+    def update_animation_speed(self, value):
+        """Update animation speed from slider."""
+        self.animation_speed = value
+        self.speed_label.setText(str(value))
+
+        # Update timer if running
+        if self.animation_running and self.animation_timer:
+            self.animation_timer.setInterval(1000 // self.animation_speed)
+
+    def update_steps_per_frame(self, value):
+        """Update steps per frame from slider."""
+        self.steps_per_frame = value
+        self.steps_per_frame_label.setText(str(value))
+
+    def toggle_auto_rotate(self):
+        """Toggle auto-rotation during animation."""
+        self.animation_auto_rotate = self.auto_rotate_checkbox.isChecked()
+
+    def toggle_fade(self):
+        """Toggle point fading effect."""
+        self.animation_fade = self.fade_checkbox.isChecked()
+
+    def play_animation(self):
+        """Start or resume the animation."""
+        if not self.animation_mode:
+            return
+
+        # Get parameters
+        try:
+            attractor_name = self.attractor_combo.currentText()
+            self.current_attractor = attractor_name
+            deriv = ATTRACTORS[attractor_name]["deriv"]
+
+            params = {}
+            for pname, field in self.param_fields.items():
+                params[pname] = float(field.text())
+
+            initial = np.array([
+                float(self.x0_field.text()),
+                float(self.y0_field.text()),
+                float(self.z0_field.text())
+            ])
+
+            # Initialize animation if starting fresh
+            if self.animation_state is None:
+                self.animation_step = 0
+                self.animation_state = initial.copy()
+                self.animation_data = [initial.copy()]
+                self.animation_deriv = deriv
+                self.animation_params = params
+
+                # Clear plot
+                self.ax.clear()
+                self.ax.set_xlabel("x")
+                self.ax.set_ylabel("y")
+                self.ax.set_zlabel("z")
+                self.ax.set_title(f"{attractor_name} Attractor (Animating)")
+
+                # Apply visual settings
+                self._apply_grid_settings()
+                self._apply_axis_settings()
+                self._apply_color_theme()
+
+                # Initialize scatter plot
+                self.animation_scatter = None
+                self.animation_azim = -60
+
+            # Start timer
+            if not self.animation_timer:
+                self.animation_timer = QtCore.QTimer()
+                self.animation_timer.timeout.connect(self.animate_step)
+
+            self.animation_timer.start(1000 // self.animation_speed)
+            self.animation_running = True
+
+            # Update button states
+            self.play_btn.setEnabled(False)
+            self.pause_btn.setEnabled(True)
+
+            self.statusBar().showMessage("Animation started")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to start animation:\n{str(e)}")
+            self.statusBar().showMessage(f"Error: {str(e)}")
+
+    def pause_animation(self):
+        """Pause the animation."""
+        if self.animation_timer:
+            self.animation_timer.stop()
+
+        self.animation_running = False
+
+        # Update button states
+        self.play_btn.setEnabled(True)
+        self.pause_btn.setEnabled(False)
+
+        self.statusBar().showMessage("Animation paused")
+
+    def reset_animation(self):
+        """Reset animation to the beginning."""
+        # Stop if running
+        if self.animation_running:
+            self.pause_animation()
+
+        # Clear animation state
+        self.animation_step = 0
+        self.animation_state = None
+        self.animation_data = None
+        self.animation_scatter = None
+        self.animation_azim = -60
+
+        # Clear plot
+        self.ax.clear()
+        self.ax.set_xlabel("x")
+        self.ax.set_ylabel("y")
+        self.ax.set_zlabel("z")
+        if self.current_attractor:
+            self.ax.set_title(f"{self.current_attractor} Attractor")
+
+        # Apply visual settings
+        self._apply_grid_settings()
+        self._apply_axis_settings()
+        self._apply_color_theme()
+
+        self.canvas.draw()
+
+        # Update progress
+        self.progress_label.setText(f"Progress: 0 / {self.steps:,}")
+
+        self.statusBar().showMessage("Animation reset")
+
+    def animate_step(self):
+        """Perform one animation step."""
+        if self.animation_step >= self.steps:
+            # Animation complete
+            self.pause_animation()
+            self.statusBar().showMessage("Animation complete")
+            return
+
+        # Compute multiple steps per frame
+        for _ in range(self.steps_per_frame):
+            if self.animation_step >= self.steps:
+                break
+
+            # RK4 integration step
+            state = self.animation_state
+            dt = self.dt
+            k1 = self.animation_deriv(state, self.animation_params)
+            k2 = self.animation_deriv(state + 0.5 * dt * k1, self.animation_params)
+            k3 = self.animation_deriv(state + 0.5 * dt * k2, self.animation_params)
+            k4 = self.animation_deriv(state + dt * k3, self.animation_params)
+            new_state = state + (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
+
+            self.animation_state = new_state
+            self.animation_data.append(new_state.copy())
+            self.animation_step += 1
+
+        # Update plot
+        data_array = np.array(self.animation_data)
+        x, y, z = data_array[:, 0], data_array[:, 1], data_array[:, 2]
+
+        # Remove old scatter if exists
+        if self.animation_scatter:
+            self.animation_scatter.remove()
+
+        # Determine alpha values based on fade setting
+        if self.animation_fade and len(data_array) > 100:
+            # Create fade effect - newer points are more opaque
+            alphas = np.linspace(0.1, 0.8, len(data_array))
+        else:
+            alphas = 0.6
+
+        # Draw scatter points
+        self.animation_scatter = self.ax.scatter(x, y, z,
+                                                c=self.scatter_color,
+                                                s=1,
+                                                alpha=alphas)
+
+        # Auto-rotate if enabled
+        if self.animation_auto_rotate:
+            self.animation_azim += 0.5
+            self.ax.view_init(elev=20, azim=self.animation_azim)
+
+        # Update progress label
+        self.progress_label.setText(f"Progress: {self.animation_step:,} / {self.steps:,}")
+
+        # Redraw
+        self.canvas.draw()
 
     def show_plot_settings(self):
         dialog = QDialog(self)
