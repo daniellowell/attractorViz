@@ -1,5 +1,19 @@
 # Attractor Explorer - Quick Reference
 
+## Table of Contents
+
+- [Running the Application](#running-the-application)
+- [Keyboard Shortcuts](#keyboard-shortcuts)
+- [Attractors](#attractors)
+- [Common Tasks](#common-tasks)
+- [Menu Quick Reference](#menu-quick-reference)
+- [Performance Tips](#performance-tips)
+- [Equations Reference](#equations-reference)
+- [Troubleshooting](#troubleshooting)
+- [File Locations](#file-locations)
+- [Environment Info](#environment-info)
+- [Performance Metrics](#performance-metrics)
+
 ## Running the Application
 
 ```bash

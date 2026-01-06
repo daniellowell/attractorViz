@@ -2,6 +2,22 @@
 
 Interactive Python GUI for visualizing classic chaotic attractors using PyQt6 and Matplotlib.
 
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Requirements](#requirements)
+- [Features](#features)
+- [Menu Structure](#menu-structure)
+- [Attractor Descriptions](#attractor-descriptions)
+- [Mathematical Background and References](#mathematical-background-and-references)
+- [Usage Tips](#usage-tips)
+- [Technical Details](#technical-details)
+- [File Structure](#file-structure)
+- [Development](#development)
+- [Performance Optimizations](#performance-optimizations)
+- [License](#license)
+- [Credits](#credits)
+
 ## Quick Start
 
 ```bash
@@ -153,6 +169,97 @@ dz/dt = c + az - z³/3 - (x² + y²)(1 + ez) + fz(x³)
 **Parameters:**
 - a = 0.95, b = 0.7, c = 0.6, d = 3.5, e = 0.25, f = 0.1
 
+## Mathematical Background and References
+
+### Lorenz Attractor
+
+The Lorenz attractor is one of the most famous examples of chaotic behavior in dynamical systems. It was discovered by Edward N. Lorenz in 1963 while studying simplified models of atmospheric convection.
+
+**Historical Context:** Lorenz derived this system as a truncated model of thermal convection in the atmosphere, reducing the Navier-Stokes equations to three coupled ordinary differential equations. His discovery that tiny differences in initial conditions lead to vastly different outcomes became known as the "butterfly effect" and fundamentally changed our understanding of predictability in deterministic systems.
+
+**Mathematical Properties:**
+- The system is dissipative (phase space volume contracts)
+- Has two unstable fixed points surrounded by the attractor lobes
+- Exhibits sensitive dependence on initial conditions (Lyapunov exponent > 0)
+- The attractor has a fractal structure with non-integer Hausdorff dimension (~2.06)
+
+**Key Reference:**
+> Lorenz, E. N. (1963). "Deterministic Nonperiodic Flow". *Journal of the Atmospheric Sciences*, 20(2), 130-141. doi:10.1175/1520-0469(1963)020<0130:DNF>2.0.CO;2
+
+**Additional Reading:**
+- Sparrow, C. (1982). *The Lorenz Equations: Bifurcations, Chaos, and Strange Attractors*. Springer-Verlag.
+- Strogatz, S. H. (2015). *Nonlinear Dynamics and Chaos*, 2nd ed. Westview Press. (Chapter 9)
+
+### Rössler Attractor
+
+The Rössler attractor was constructed by Otto Rössler in 1976 as an even simpler continuous chaotic system than the Lorenz attractor, designed to have only one nonlinear term.
+
+**Historical Context:** Rössler aimed to create a minimal chaotic system that would be easier to analyze than the Lorenz system. The attractor exhibits a folded band structure and was one of the first systems used to study the route to chaos through period-doubling bifurcations.
+
+**Mathematical Properties:**
+- Contains only one quadratic nonlinearity (the term z(x-c))
+- Exhibits a characteristic spiral-and-fold structure
+- Shows period-doubling route to chaos as parameter c varies
+- Has a simpler topology than the Lorenz attractor
+
+**Key Reference:**
+> Rössler, O. E. (1976). "An Equation for Continuous Chaos". *Physics Letters A*, 57(5), 397-398. doi:10.1016/0375-9601(76)90101-8
+
+**Additional Reading:**
+- Rössler, O. E. (1979). "Continuous chaos—Four prototype equations". *Annals of the New York Academy of Sciences*, 316(1), 376-392.
+- Letellier, C., & Gilmore, R. (2007). "Poincaré sections for a new three-dimensional toroidal attractor". *Journal of Physics A*, 40(19), 5597.
+
+### Thomas Attractor
+
+The Thomas attractor, introduced by René Thomas, is a cyclically symmetric system that demonstrates dissipative chaos with elegant geometrical properties.
+
+**Historical Context:** Thomas studied this system in the context of gene regulatory networks and biochemical oscillators. The attractor is notable for its high degree of symmetry and its smooth, flowing trajectories.
+
+**Mathematical Properties:**
+- Exhibits cyclic symmetry: invariant under permutations (x,y,z) → (y,z,x)
+- Time-reversal symmetric
+- Shows conservative-like behavior despite being dissipative
+- Parameter b controls the transition from regular to chaotic behavior
+
+**Key Reference:**
+> Thomas, R. (1999). "Deterministic chaos seen in terms of feedback circuits: Analysis, synthesis, 'labyrinth chaos'". *International Journal of Bifurcation and Chaos*, 9(10), 1889-1905. doi:10.1142/S0218127499001383
+
+**Additional Reading:**
+- Thomas, R., & d'Ari, R. (1990). *Biological Feedback*. CRC Press.
+
+### Aizawa Attractor
+
+The Aizawa attractor is a complex three-dimensional chaotic system with six parameters, capable of producing a rich variety of dynamical behaviors and geometric structures.
+
+**Historical Context:** This system was introduced in the chaos literature as an example of a system with intricate toroidal structures. The attractor demonstrates how multiple parameters can interact to create complex strange attractors.
+
+**Mathematical Properties:**
+- Six-parameter system allowing exploration of large parameter space
+- Produces toroidal structures with twisted bands
+- Can exhibit both simple and highly complex attractors depending on parameters
+- Shows multiple coexisting attractors for certain parameter values
+
+**Key Reference:**
+> Aizawa, Y. (1982). "Global Aspects of the Dissipative Dynamical Systems I: Statistical Identification and Fractal Properties of the Lorenz Chaos". *Progress of Theoretical Physics*, 68(1), 64-84. doi:10.1143/PTP.68.64
+
+**Note:** The specific parameter set used in this application (a=0.95, b=0.7, c=0.6, d=3.5, e=0.25, f=0.1) is one of several standard configurations found in the chaos literature that produces aesthetically striking visualizations.
+
+### General Chaos Theory References
+
+For broader understanding of chaotic dynamical systems and strange attractors:
+
+- **Strogatz, S. H. (2015).** *Nonlinear Dynamics and Chaos: With Applications to Physics, Biology, Chemistry, and Engineering*, 2nd ed. Westview Press.
+  - Comprehensive introduction to nonlinear dynamics and chaos theory
+
+- **Ott, E. (2002).** *Chaos in Dynamical Systems*, 2nd ed. Cambridge University Press.
+  - Advanced treatment of chaotic systems and their properties
+
+- **Alligood, K. T., Sauer, T. D., & Yorke, J. A. (1996).** *Chaos: An Introduction to Dynamical Systems*. Springer.
+  - Detailed mathematical treatment with computational examples
+
+- **Sprott, J. C. (2003).** *Chaos and Time-Series Analysis*. Oxford University Press.
+  - Practical guide with many examples of chaotic systems
+
 ## Usage Tips
 
 ### Creating a Plot
@@ -205,9 +312,11 @@ dz/dt = c + az - z³/3 - (x² + y²)(1 + ez) + fz(x³)
 Attractors/
 ├── attractors.py          # Main application
 ├── requirements.txt       # Dependencies
-├── README.md              # This file
+├── README.md              # User documentation (this file)
 ├── QUICK_REFERENCE.md     # Quick reference guide
+├── PROJECT_GUIDE.md       # Developer guide for LLM agents
 ├── test_attractors.py     # Validation tests
+├── .gitignore             # Git ignore patterns
 ├── venv/                  # Python 3.13 environment
 └── logs/                  # Error logs (auto-created)
 ```
