@@ -85,7 +85,7 @@ pip install -r requirements.txt
 - **Toggle panel visibility** - Ctrl+P to hide/show
 - **Info button (?)** - Detailed attractor descriptions
 - **Status bar** - Real-time feedback
-- **Menu system** - Organized File, Settings, View, Plot menus
+- **Menu system** - Organized File, Settings, View, Plot, About menus
 - **Keyboard shortcuts** - Ctrl+R (plot), Ctrl+P (panel), Ctrl+Q (quit)
 
 ## Menu Structure
@@ -111,6 +111,10 @@ pip install -r requirements.txt
 - Create Plot (Ctrl+R)
 - Plot Settings...
 - Reset View
+
+### About
+- About Attractor Explorer
+- License
 
 ## Attractor Descriptions
 

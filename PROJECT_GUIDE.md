@@ -60,7 +60,8 @@ AttractorWindow
 │   ├── File (Quit)
 │   ├── Settings (colors, draw modes, grid, axis, dark mode, stats)
 │   ├── View (panel toggle)
-│   └── Plot (create, settings dialog, reset view)
+│   ├── Plot (create, settings dialog, reset view)
+│   └── About (application info, license)
 └── State Management
     ├── Plot data cache (self.data)
     ├── Visual settings (colors, modes, flags)

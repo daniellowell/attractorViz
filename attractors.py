@@ -488,6 +488,7 @@ class AttractorWindow(QMainWindow):
             Settings: Colors, draw modes, grid, axis, dark mode, stats
             View: Control panel toggle
             Plot: Create, settings dialog, reset view
+            About: Application info, license
         """
         menubar = self.menuBar()
 
@@ -582,6 +583,16 @@ class AttractorWindow(QMainWindow):
         reset_view_action = QAction("Reset View", self)
         reset_view_action.triggered.connect(self.reset_view)
         plot_menu.addAction(reset_view_action)
+
+        # About menu
+        about_menu = menubar.addMenu("About")
+        about_action = QAction("About Attractor Explorer", self)
+        about_action.triggered.connect(self.show_about)
+        about_menu.addAction(about_action)
+
+        license_action = QAction("License", self)
+        license_action.triggered.connect(self.show_license)
+        about_menu.addAction(license_action)
 
     def on_attractor_changed(self, attractor_name):
         """Handle attractor selection change.
@@ -1138,9 +1149,15 @@ class AttractorWindow(QMainWindow):
         data_array = np.array(self.animation_data)
         x, y, z = data_array[:, 0], data_array[:, 1], data_array[:, 2]
 
-        # Remove old scatter if exists
+        # Clear and redraw scatter (scatter artists can't be updated directly)
         if self.animation_scatter:
-            self.animation_scatter.remove()
+            # Store the collection and remove it from axes
+            try:
+                self.animation_scatter.remove()
+            except NotImplementedError:
+                # Fallback: clear axes artists manually
+                for artist in self.ax.collections[:]:
+                    artist.remove()
 
         # Determine alpha values based on fade setting
         if self.animation_fade and len(data_array) > 100:
@@ -1218,6 +1235,46 @@ class AttractorWindow(QMainWindow):
             except ValueError as e:
                 QMessageBox.warning(self, "Invalid Input", f"Please enter valid numbers: {e}")
                 self.statusBar().showMessage("Plot settings update failed")
+
+    def show_about(self):
+        """Display the About dialog with author information."""
+        about_text = """<h2>Attractor Explorer</h2>
+        <p>Interactive visualization of classic chaotic attractors</p>
+        <p><b>Author:</b> Daniel Lowell</p>
+        <p><b>Email:</b> <a href="mailto:redratio1@gmail.com">redratio1@gmail.com</a></p>
+        <p>Version 1.0</p>"""
+
+        QMessageBox.about(self, "About Attractor Explorer", about_text)
+
+    def show_license(self):
+        """Display the MIT License dialog."""
+        license_text = """MIT License
+
+Copyright (c) 2025 Daniel Lowell
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE."""
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("MIT License")
+        msg.setText(license_text)
+        msg.setIcon(QMessageBox.Icon.Information)
+        msg.exec()
 
     def create_plot(self):
         """Create or regenerate the attractor plot.

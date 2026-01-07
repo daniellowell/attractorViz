@@ -105,6 +105,10 @@ Plot
   ├─ Create Plot (Ctrl+R)
   ├─ Plot Settings...
   └─ Reset View
+
+About
+  ├─ About Attractor Explorer
+  └─ License
 ```
 
 ## Performance Tips
