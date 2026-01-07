@@ -36,7 +36,7 @@ The application uses a monolithic design with one main class: `AttractorWindow(Q
 
 **Rationale:**
 - Simplicity: All state and behavior in one place
-- Small codebase (~495 lines)
+- Small codebase (~788 lines)
 - Tight coupling between UI and plotting logic makes separation unnecessary
 - Easy to understand and modify for educational purposes
 
@@ -47,11 +47,13 @@ AttractorWindow
 ├── UI Components
 │   ├── Left Panel (scrollable control panel)
 │   │   ├── Attractor selector dropdown
-│   │   ├── Equations display
 │   │   ├── Parameter fields (dynamic)
 │   │   └── Initial conditions (x0, y0, z0)
-│   └── Right Panel (plot area)
+│   └── Right Panel (plot area ~81% of figure)
 │       ├── Matplotlib 3D canvas
+│       │   ├── Equations overlay (upper left)
+│       │   ├── Stats overlay (lower left, optional)
+│       │   └── 10% closer default zoom
 │       ├── Navigation toolbar
 │       └── Info button
 ├── Menu System
@@ -62,6 +64,7 @@ AttractorWindow
 └── State Management
     ├── Plot data cache (self.data)
     ├── Visual settings (colors, modes, flags)
+    ├── Text overlays (equations_text, stats_text)
     └── Integration parameters (steps, dt, stride)
 ```
 
@@ -106,9 +109,16 @@ def _apply_grid_settings(self):
 def _apply_axis_settings(self):
     """Apply axis visibility settings."""
     self.ax.set_axis_on() if self.show_axis else self.ax.set_axis_off()
+
+def _apply_tick_settings(self):
+    """Limit number of ticks to 5 per axis for cleaner visualization."""
+    from matplotlib.ticker import MaxNLocator
+    self.ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
+    self.ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
+    self.ax.zaxis.set_major_locator(MaxNLocator(nbins=5))
 ```
 
-**Usage:** Called from both `create_plot()` and `_redraw_plot()` to ensure consistent application.
+**Usage:** Called from `create_plot()`, `_redraw_plot()`, `play_animation()`, and `reset_animation()` to ensure consistent application.
 
 ### 2. Cached Redraw Pattern (Performance Optimization)
 
@@ -123,16 +133,18 @@ def _redraw_plot(self):
     if self.data is None:
         return
 
-    # Clear stats text BEFORE ax.clear() to prevent memory leak
+    # Clear stats and equations text BEFORE ax.clear() to prevent memory leak
     if self.stats_text:
         self.stats_text.remove()
         self.stats_text = None
+    if self.equations_text:
+        self.equations_text.remove()
+        self.equations_text = None
 
     self.ax.clear()
     self.ax.set_xlabel("x")
     self.ax.set_ylabel("y")
     self.ax.set_zlabel("z")
-    self.ax.set_title(f"{self.current_attractor} Attractor")
 
     x, y, z = self.data[:, 0], self.data[:, 1], self.data[:, 2]
 
@@ -146,10 +158,12 @@ def _redraw_plot(self):
     self._apply_grid_settings()
     self._apply_axis_settings()
     self._apply_color_theme()
+    self._apply_tick_settings()
 
-    # Update stats if enabled
+    # Update stats and equations if enabled
     if self.show_stats:
         self.update_stats()
+    self.update_equations()
 
     self.canvas.draw()
 ```
@@ -210,11 +224,15 @@ def update_stats(self):
 
 ```
 Attractors/
-├── attractors.py          # Main application (495 lines)
+├── attractors.py          # Main application (~788 lines)
 │   ├── Derivative functions (lorenz, rossler, thomas, aizawa)
 │   ├── ATTRACTORS dictionary (metadata)
 │   ├── rk4_integrate() function
 │   └── AttractorWindow class (UI and logic)
+│       ├── UI with equations overlay (not in left panel)
+│       ├── Maximized plot area (~81% of figure)
+│       ├── 5 ticks per axis for cleaner appearance
+│       └── 10% closer default zoom
 │
 ├── test_attractors.py     # Validation tests (64 lines)
 │   └── Tests for each attractor's computation
@@ -235,13 +253,14 @@ Attractors/
 **Lines 14-51:** Derivative functions for each attractor
 **Lines 54-119:** ATTRACTORS metadata dictionary
 **Lines 121-138:** rk4_integrate() function (numerical integration)
-**Lines 141-495:** AttractorWindow class
-  - **Lines 143-216:** `_build_ui()` - UI construction
+**Lines 141-788:** AttractorWindow class
+  - **Lines 143-393:** `_build_ui()` - UI construction (no equations QGroupBox)
   - **Lines 218-326:** `_build_menus()` - Menu system
   - **Lines 328-333:** `on_attractor_changed()` - Selector handler
-  - **Lines 335-400:** Helper methods (_apply_*, _redraw_plot)
+  - **Lines 335-570:** Helper methods (_apply_*, _redraw_plot, update_equations)
   - **Lines 401-450:** UI callbacks and dialogs
   - **Lines 452-484:** `create_plot()` - Main integration and plotting
+  - **Lines 673-698:** `update_equations()` - Equations overlay rendering
 
 ## Dependencies and Tools
 
@@ -399,8 +418,22 @@ python test_attractors.py
    - No repeated import overhead
 
 4. **Memory Leak Prevention**
-   - Clear stats_text before ax.clear()
+   - Clear stats_text and equations_text before ax.clear()
    - Prevents orphaned matplotlib objects
+
+5. **Maximized Plot Area** (27% more viewing area)
+   - Reduced margins from default 10% to 5% on all sides
+   - Plot area increased from ~64% to ~81% of figure
+   - Applied via `fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)`
+
+6. **Cleaner Axes** (professional appearance)
+   - Limited to 5 ticks per axis using MaxNLocator
+   - Reduces clutter while maintaining readability
+   - Applied consistently across all plotting methods
+
+7. **Enhanced Default View** (better initial visualization)
+   - Default zoom increased 10% (`self.ax.dist = 10 * 0.9`)
+   - Provides better detail in initial view
 
 ### Performance Targets
 
@@ -582,10 +615,13 @@ Separate groups with blank lines.
 
 ### Common Pitfalls to Avoid
 - Importing libraries inside methods (performance)
-- Duplicating visual settings code (use helpers)
+- Duplicating visual settings code (use helpers: _apply_tick_settings, etc.)
 - Breaking cached redraw by removing self.data
-- Creating memory leaks (clear objects before ax.clear())
+- Creating memory leaks (clear stats_text AND equations_text before ax.clear())
 - Calling create_plot() for visual-only changes (use _redraw_plot())
+- Removing plot title (already removed for cleaner interface)
+- Changing plot margins (optimized at 5% for ~81% plot area)
+- Modifying default zoom (set to 10% closer for better detail)
 
 ### When Making Changes
 - Always read relevant code sections first

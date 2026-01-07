@@ -53,16 +53,19 @@ pip install -r requirements.txt
 ### Interactive Visualization
 
 - **Attractor selector** - Auto-redraw on change
-- **Equations display** - Mathematical definitions shown inline
+- **Equations overlay** - Mathematical definitions shown in upper left corner of plot
 - **Parameter editing** - Physics tooltips on all parameters
 - **Initial conditions** - Configurable x0, y0, z0
 - **Plot settings** - Steps, dt, stride via dialog (Plot → Plot Settings)
+- **Maximized plot area** - Plot fills ~81% of graph panel with optimized margins
+- **Enhanced default view** - 10% closer zoom for better initial visualization
 
 ### Rendering Options
 
 - **Draw modes** - Line, scatter, or both
 - **Grid toggle** - Show/hide grid lines (backdrop auto-hides)
 - **Axis toggle** - Show/hide axis labels and ticks
+- **Clean axes** - Limited to 5 ticks per axis for professional appearance
 - **Dark mode** - Full dark theme with #2b2b2b background
 - **Color picker** - Customize line and scatter colors
 
@@ -76,7 +79,8 @@ pip install -r requirements.txt
 
 ### User Interface
 
-- **Scrollable control panel** - Works on small screens
+- **Compact control panel** - Equations moved to plot overlay for more space
+- **Scrollable controls** - Works on small screens
 - **Toggle panel visibility** - Ctrl+P to hide/show
 - **Info button (?)** - Detailed attractor descriptions
 - **Status bar** - Real-time feedback
@@ -286,6 +290,7 @@ For broader understanding of chaotic dynamical systems and strange attractors:
 
 - **Drag** to rotate
 - **Scroll** to zoom
+- **Default view** - 10% closer zoom than matplotlib default for better detail
 - **Toolbar** for pan/zoom modes
 - **Plot → Reset View** to restore defaults
 
@@ -298,6 +303,8 @@ For broader understanding of chaotic dynamical systems and strange attractors:
 **Rendering:** Qt with hardware acceleration
 - OpenGL/Metal for 3D transformations
 - Matplotlib for scientific plotting
+- Maximized plot area (~81% of figure)
+- 5 ticks per axis for cleaner visualization
 - Optimized redraw methods for instant toggles
 
 **Performance:**

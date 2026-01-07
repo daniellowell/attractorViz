@@ -61,6 +61,7 @@ python test_attractors.py
 ### 3D Navigation
 - **Drag** to rotate view
 - **Scroll** to zoom
+- **Default view:** 10% closer zoom for better detail
 - **Reset:** Plot → Reset View
 
 ### Adjust Plot Settings
@@ -73,10 +74,10 @@ python test_attractors.py
 - Or press Ctrl+P
 - Maximizes plot viewing area
 
-### Get Attractor Info
-- Click **?** button on toolbar
-- Shows equations and description
-- Educational details about each system
+### View Equations
+- Equations overlay displayed in upper left corner of plot
+- Visible at startup and updated when switching attractors
+- Click **?** button for detailed attractor descriptions and history
 
 ## Menu Quick Reference
 
@@ -195,3 +196,10 @@ Attractors/
 - **Plot time:** ~200ms (10k points)
 - **Memory:** ~235 MB loaded
 - **Toggle speed:** 70% faster (optimized)
+
+## UI Layout
+
+- **Plot area:** ~81% of graph panel (optimized margins)
+- **Equations:** Overlay in upper left corner of plot
+- **Axes:** Limited to 5 ticks per axis for cleaner appearance
+- **Default zoom:** 10% closer than matplotlib default
