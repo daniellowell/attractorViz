@@ -2,6 +2,8 @@
 
 import sys
 import time
+import logging
+from pathlib import Path
 import numpy as np
 import psutil
 import matplotlib
@@ -18,6 +20,19 @@ try:
 except ImportError:
     print("ERROR: PyQt6 is required. Install with: pip install PyQt6")
     sys.exit(1)
+
+# Configure logging to file
+log_dir = Path(__file__).parent / "logs"
+log_dir.mkdir(exist_ok=True)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_dir / "attractors_debug.log"),
+        logging.StreamHandler()  # Also keep console output
+    ]
+)
+logger = logging.getLogger(__name__)
 
 
 def lorenz(state, p):
@@ -599,12 +614,47 @@ class AttractorWindow(QMainWindow):
 
         Updates parameters and initial conditions to match the selected attractor.
         If data exists, automatically regenerates the plot.
+        Clears animation state to prevent old attractor from being used.
 
         Args:
             attractor_name: Name of the selected attractor
         """
         should_replot = (attractor_name != self.current_attractor and self.data is not None)
         self.current_attractor = attractor_name
+
+        # Clear animation state when switching attractors
+        if self.animation_running:
+            self.pause_animation()
+        self.animation_state = None
+        self.animation_data = None
+        self.animation_scatter = None
+        self.animation_step = 0
+        self.animation_axis_limits = None
+        self.progress_label.setText(f"Progress: 0 / {self.steps:,}")
+
+        # Clear the plot if in animation mode to remove old scatter
+        if self.animation_mode:
+            # Clear equations text before clearing axis
+            if self.equations_text:
+                self.equations_text.remove()
+                self.equations_text = None
+
+            self.ax.clear()
+            self.ax.set_xlabel("x")
+            self.ax.set_ylabel("y")
+            self.ax.set_zlabel("z")
+
+            # Apply visual settings
+            self._apply_grid_settings()
+            self._apply_axis_settings()
+            self._apply_color_theme()
+            self._apply_tick_settings()
+
+            # Update equations for new attractor
+            self.update_equations()
+
+            self.canvas.draw()
+
         self.rebuild_params()
         if should_replot:
             self.create_plot()
@@ -945,6 +995,8 @@ class AttractorWindow(QMainWindow):
     def toggle_fade(self):
         """Toggle point fading effect."""
         self.animation_fade = self.fade_checkbox.isChecked()
+        status = "ON" if self.animation_fade else "OFF"
+        self.statusBar().showMessage(f"Fade effect: {status}")
 
     def update_trail_length(self, value):
         """Update trail length from slider."""
@@ -1150,27 +1202,33 @@ class AttractorWindow(QMainWindow):
         x, y, z = data_array[:, 0], data_array[:, 1], data_array[:, 2]
 
         # Clear and redraw scatter (scatter artists can't be updated directly)
-        if self.animation_scatter:
-            # Store the collection and remove it from axes
+        # Always clear all collections to ensure clean state
+        for collection in self.ax.collections[:]:
             try:
-                self.animation_scatter.remove()
-            except NotImplementedError:
-                # Fallback: clear axes artists manually
-                for artist in self.ax.collections[:]:
-                    artist.remove()
+                collection.remove()
+            except (NotImplementedError, ValueError):
+                pass
+        self.animation_scatter = None
 
-        # Determine alpha values based on fade setting
-        if self.animation_fade and len(data_array) > 100:
+        # Determine alpha values based on current fade checkbox state
+        # Always read from checkbox to ensure real-time updates
+        fade_enabled = self.fade_checkbox.isChecked()
+
+        # Draw scatter points with current fade setting
+        if fade_enabled and len(data_array) > 100:
             # Create fade effect - newer points are more opaque
             alphas = np.linspace(0.1, 0.8, len(data_array))
+            self.animation_scatter = self.ax.scatter(x, y, z,
+                                                    c=self.scatter_color,
+                                                    s=1,
+                                                    alpha=alphas)
         else:
-            alphas = 0.6
-
-        # Draw scatter points
-        self.animation_scatter = self.ax.scatter(x, y, z,
-                                                c=self.scatter_color,
-                                                s=1,
-                                                alpha=alphas)
+            # No fade - uniform fully opaque points
+            # Explicitly set alpha=1.0 to ensure full opacity
+            self.animation_scatter = self.ax.scatter(x, y, z,
+                                                    c=self.scatter_color,
+                                                    s=1,
+                                                    alpha=1.0)
 
         # Apply fixed axis limits if enabled
         if self.animation_fixed_scale and self.animation_axis_limits:
