@@ -334,6 +334,15 @@ class AttractorWindow(QMainWindow):
         speed_layout.addWidget(self.speed_label)
         animation_layout.addLayout(speed_layout)
 
+        # Total steps field (synced with Plot Settings)
+        total_steps_layout = QHBoxLayout()
+        total_steps_layout.addWidget(QLabel("Total Steps:"))
+        self.animation_steps_field = QLineEdit(str(self.steps))
+        self.animation_steps_field.setToolTip("Total integration steps (synced with Plot Settings)")
+        self.animation_steps_field.textChanged.connect(self.on_animation_steps_changed)
+        total_steps_layout.addWidget(self.animation_steps_field)
+        animation_layout.addLayout(total_steps_layout)
+
         # Steps per frame slider
         steps_layout = QHBoxLayout()
         steps_layout.addWidget(QLabel("Steps/Frame:"))
@@ -897,6 +906,22 @@ class AttractorWindow(QMainWindow):
         if self.animation_running and self.animation_timer:
             self.animation_timer.setInterval(1000 // self.animation_speed)
 
+    def on_animation_steps_changed(self, text):
+        """Handle changes to the animation steps field.
+
+        Synchronizes with Plot Settings and updates progress display.
+        Only processes valid integer inputs.
+        """
+        try:
+            if text:  # Only process non-empty text
+                steps = int(text)
+                if steps > 0:
+                    self.steps = steps
+                    # Update progress label format
+                    self.progress_label.setText(f"Progress: {self.animation_step:,} / {self.steps:,}")
+        except ValueError:
+            pass  # Ignore invalid input during typing
+
     def update_steps_per_frame(self, value):
         """Update steps per frame from slider."""
         self.steps_per_frame = value
@@ -1006,6 +1031,9 @@ class AttractorWindow(QMainWindow):
             self.play_btn.setEnabled(False)
             self.pause_btn.setEnabled(True)
 
+            # Disable steps field while running
+            self.animation_steps_field.setEnabled(False)
+
             self.statusBar().showMessage("Animation started")
 
         except Exception as e:
@@ -1022,6 +1050,9 @@ class AttractorWindow(QMainWindow):
         # Update button states
         self.play_btn.setEnabled(True)
         self.pause_btn.setEnabled(False)
+
+        # Enable steps field when paused
+        self.animation_steps_field.setEnabled(True)
 
         self.statusBar().showMessage("Animation paused")
 
@@ -1061,8 +1092,9 @@ class AttractorWindow(QMainWindow):
 
         self.canvas.draw()
 
-        # Update progress
+        # Update progress and ensure steps field is enabled
         self.progress_label.setText(f"Progress: 0 / {self.steps:,}")
+        self.animation_steps_field.setEnabled(True)
 
         self.statusBar().showMessage("Animation reset")
 
@@ -1177,6 +1209,11 @@ class AttractorWindow(QMainWindow):
                 self.steps = int(steps_field.text())
                 self.dt = float(dt_field.text())
                 self.stride = int(stride_field.text())
+
+                # Sync animation steps field
+                self.animation_steps_field.setText(str(self.steps))
+                self.progress_label.setText(f"Progress: {self.animation_step:,} / {self.steps:,}")
+
                 self.statusBar().showMessage(f"Plot settings updated: steps={self.steps}, dt={self.dt}, stride={self.stride}")
             except ValueError as e:
                 QMessageBox.warning(self, "Invalid Input", f"Please enter valid numbers: {e}")

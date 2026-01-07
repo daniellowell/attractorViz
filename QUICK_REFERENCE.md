@@ -68,6 +68,8 @@ python test_attractors.py
 - Plot → Plot Settings...
 - Configure: steps, dt, stride
 - Settings persist across plots
+- Animation mode: Total Steps field synced with Plot Settings
+- Steps field is editable when animation is paused, greyed out while running
 
 ### Hide Control Panel
 - View → Show Control Panel (uncheck)

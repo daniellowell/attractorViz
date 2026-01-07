@@ -65,7 +65,8 @@ AttractorWindow
     ├── Plot data cache (self.data)
     ├── Visual settings (colors, modes, flags)
     ├── Text overlays (equations_text, stats_text)
-    └── Integration parameters (steps, dt, stride)
+    ├── Integration parameters (steps, dt, stride)
+    └── Animation steps field (synced with Plot Settings)
 ```
 
 ### Data Flow

@@ -57,6 +57,7 @@ pip install -r requirements.txt
 - **Parameter editing** - Physics tooltips on all parameters
 - **Initial conditions** - Configurable x0, y0, z0
 - **Plot settings** - Steps, dt, stride via dialog (Plot → Plot Settings)
+- **Animation steps control** - Total steps field synced with Plot Settings, editable when paused
 - **Maximized plot area** - Plot fills ~81% of graph panel with optimized margins
 - **Enhanced default view** - 10% closer zoom for better initial visualization
 
